@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+    <style>
+        .comment {
+            background: Lightgray;
+            border-radius: 5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 20px;
+            margin-left: 20px
+        }
+
+        .answer {
+            background: silver;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+        .collapsible {
+            background-color: #777;
+            color: white;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .submit_button {
+            background-color: #777;
+            color: white;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            width: 19.6%;
+            position: absolute;
+            height: 46px;
+            text-align: center;
+            padding: 0
+        }
+
+        .active, .collapsible:hover {
+            background-color: #555;
+        }
+
+        .content {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: #f1f1f1;
+        }
+
+        input[type=text] {
+            width: 80%;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: white;
+            background-position: 10px 10px;
+            background-repeat: no-repeat;
+            padding: 12px 20px 12px 15px;
+        }
+    </style>
+</head>
+<body>
+
+<input id="input" type="text" name="search" placeholder="Search..">
+<button class="submit_button" onclick="get_data()" style="">Submit</button>
+
+<div id="content" style="margin-top: 20px;">
+</div>
+
+<button id="timer" class="submit_button" style="width: 98%; margin-top: 20px; margin-bottom: 20px">Time Taken: N/A
+</button>
+<div style="margin-top: 90px">
+
+</div>
+<script>
+    function expand_div(id) {
+        if ($("#" + id).hasClass("content")) {
+            $("#" + id).removeClass("content")
+        } else {
+            $("#" + id).addClass("content")
+        }
+    }
+</script>
+<script>
+    function get_data() {
+        let ajaxTime = new Date().getTime();
+
+        $.ajax({
+            type: "POST",
+            url: location.origin + "/Api/Search",
+            data: {
+                query: JSON.stringify($("#input").val())
+            },
+            dataType: "json",
+            beforeSend: function () {
+            },
+            success: function (data) {
+                let converter = new showdown.Converter()
+                let keys = Object.keys(data)
+                let html_string = ''
+
+                for (let i = keys.length - 1; i >= 0; i--) {
+                    let temp_data = data[keys[i]]
+                    html_string += '<button onclick="expand_div(\'content_' + i + '\')" class="collapsible">' +
+                        temp_data.title + '<br>' + timeConverter(temp_data.created) + '<br>' +
+                        temp_data.score + ' Votes</button>'
+
+                    html_string += '<div class="content" id="content_' + i + '"><div class="answer">' +
+                        converter.makeHtml(temp_data.body) + '</div>'
+
+
+                    if (temp_data.comments.length > 0) {
+                        temp_data.comments = temp_data.comments.sort((a, b) => (a.created > b.created) ? 1 : -1)
+                        for (let j = 0; j < temp_data.comments.length; j++) {
+                            html_string += '<div class="comment">' + converter.makeHtml(temp_data.comments[j].body) +
+                                '<div class="row"><div class="col">' +
+                                timeConverter(temp_data.comments[j].created) + '</div><div class="col">' +
+                                temp_data.comments[j].score + ' Votes</div></div></div>'
+                        }
+                    }
+
+                    if (temp_data.solutions.body !== undefined) {
+                        html_string += '<div class="answer">' + converter.makeHtml(temp_data.solutions.body) +
+                            '<div class="row"><div class="col">' + timeConverter(temp_data.created) +
+                            '</div><div class="col">' + temp_data.score + ' Votes</div></div></div>'
+
+                        if (temp_data.solutions.comments.length > 0) {
+                            temp_data.solutions.comments = temp_data.solutions.comments.sort((a, b) => (a.created > b.created) ? 1 : -1)
+                            for (let j = 0; j < temp_data.solutions.comments.length; j++) {
+                                html_string += '<div class="comment">' +
+                                    converter.makeHtml(temp_data.solutions.comments[j].body) +
+                                    '<div class="row"><div class="col">' +
+                                    timeConverter(temp_data.solutions.comments[j].created) +
+                                    '</div><div class="col">' + temp_data.solutions.comments[j].score +
+                                    ' Votes</div></div></div>'
+                            }
+                        }
+                    }
+                    html_string += '</div>'
+                }
+
+                $("#content").html(html_string)
+                $("#timer").html("Time Taken: " + ((new Date().getTime() - ajaxTime) / 1000).toFixed(1) + ' Seconds')
+            },
+            error: function () {
+                alert("OPERATION FAILED. TRY AGAIN")
+            }
+        });
+    }
+</script>
+<script>
+    function timeConverter(UNIX_timestamp) {
+        var a = new Date(UNIX_timestamp * 1000);
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var year = a.getFullYear();
+        var month = months[a.getMonth()];
+        var date = a.getDate();
+        var time = date + ' ' + month + ', ' + year;
+        return time;
+    }
+</script>
+
+</body>
+</html>
