@@ -64,34 +64,38 @@ def search():
         ]
 
         for response in all_requests:  # iterate through all results of requests
-            for post in response.json()['items']:  # iterate through all travel times for all restaurants
-                comment_post_endpoint += str(post['question_id']) + ';'
+            if response.json().get('items') is not None:
+                for post in response.json()['items']:  # iterate through all travel times for all restaurants
+                    comment_post_endpoint += str(post['question_id']) + ';'
 
         if comment_post_endpoint.endswith(';'):
             comment_post_endpoint = comment_post_endpoint[:-1]
 
         comment_post_endpoint += '/comments?pagesize=100&order=asc&sort=votes&site=stackoverflow&filter=!)Q2B_A497ZZ6FysK)6.gj97w'
-        post_comm_req = session.get(comment_post_endpoint).json()['items']
+        post_comm_req = session.get(comment_post_endpoint).json()
 
-        for item in post_comm_req:
-            post_comm_map[item['post_id']].append({
-                'created': item['creation_date'],
-                'score': item['score'],
-                'body': item['body_markdown']
-            })
+        if post_comm_req.get('items') is not None:
+            post_comm_req = post_comm_req['items']
+            for item in post_comm_req:
+                post_comm_map[item['post_id']].append({
+                    'created': item['creation_date'],
+                    'score': item['score'],
+                    'body': item['body_markdown']
+                })
 
         for response in all_requests:  # iterate through all results of requests
-            for index in range(len(response.json()['items'])):  # iterate through all travel times for all restaurants
-                post = response.json()['items'][index]
-                post_map[post['question_id']] = {
-                    'created': post['creation_date'],
-                    'score': post['score'],
-                    'title': post['title'],
-                    'body': post['body_markdown'],
-                    'comments': post_comm_map[post['question_id']],
-                    'solutions': {},
-                }
-                comment_base_endpoint += str(post['question_id']) + ';'  # generate url with all id for comment retrieval
+            if response.json().get('items') is not None:
+                for index in range(len(response.json()['items'])):  # iterate through all travel times for all restaurants
+                    post = response.json()['items'][index]
+                    post_map[post['question_id']] = {
+                        'created': post['creation_date'],
+                        'score': post['score'],
+                        'title': post['title'],
+                        'body': post['body_markdown'],
+                        'comments': post_comm_map[post['question_id']],
+                        'solutions': {},
+                    }
+                    comment_base_endpoint += str(post['question_id']) + ';'  # generate url with all id for comment retrieval
 
         if comment_base_endpoint.endswith(';'):
             comment_base_endpoint = comment_base_endpoint[:-1]
@@ -100,23 +104,24 @@ def search():
                                  'filter=!*cCFgu5yS6rFkETtKY*uE)R5KPhWwQFDGF6Qa'
         comments = session.get(comment_base_endpoint)
 
-        for comment in comments.json()['items']:
-            if comment['is_accepted'] is True:
-                comment_array = []
-                if 'comments' in comment and len(comment['comments']) > 0:  # we have comments on the answer
-                    for com in comment['comments']:
-                        comment_array.append({
-                            'created': com['creation_date'],
-                            'score': com['score'],
-                            'body': com['body_markdown']
-                        })
+        if comments.json().get('items') is not None:
+            for comment in comments.json()['items']:
+                if comment['is_accepted'] is True:
+                    comment_array = []
+                    if 'comments' in comment and len(comment['comments']) > 0:  # we have comments on the answer
+                        for com in comment['comments']:
+                            comment_array.append({
+                                'created': com['creation_date'],
+                                'score': com['score'],
+                                'body': com['body_markdown']
+                            })
 
-                post_map[comment['question_id']]['solutions'] = {
-                    'body': comment['body_markdown'],
-                    'score': comment['score'],
-                    'created': comment['creation_date'],
-                    'comments': comment_array
-                }
+                    post_map[comment['question_id']]['solutions'] = {
+                        'body': comment['body_markdown'],
+                        'score': comment['score'],
+                        'created': comment['creation_date'],
+                        'comments': comment_array
+                    }
     except Exception as e:
         print(str(e))
         return json.dumps({'success': False}), 500, {'ContentType': 'application/json'}
