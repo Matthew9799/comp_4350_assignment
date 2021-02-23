@@ -7,5 +7,5 @@ docker pull mattlew42/flask:stack_overflow_api
 ```
 To run the image then execute 
 ```shellscript
-docker run -d -p 8080:8080 mattlew42/flask
+docker run -d -p 8080:8080 mattlew42/flask:stack_overflow_api
 ```
