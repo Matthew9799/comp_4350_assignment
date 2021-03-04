@@ -35,8 +35,9 @@ tag sorted by date
 def search():
     begin = time.perf_counter()
     all_endpoints = [
-        'https://api.stackexchange.com/2.2/search?pagesize=10&order=desc&sort=votes&'
-        'site=stackoverflow&filter=!-n6SGLukb7szTV*u97CGO4G*x6qBoM)dlfqXq9LK5YwvLJSJ)akXRZ',
+        'https://api.stackexchange.com/2.2/search?pagesize=10&order=desc&sort=votes&fromdate='+
+        str(int(time.time()) - 604800) +
+        '&site=stackoverflow&filter=!-n6SGLukb7szTV*u97CGO4G*x6qBoM)dlfqXq9LK5YwvLJSJ)akXRZ',
         'https://api.stackexchange.com/2.2/search?pagesize=10&order=desc&sort=creation&'
         'site=stackoverflow&filter=!-n6SGLukb7szTV*u97CGO4G*x6qBoM)dlfqXq9LK5YwvLJSJ)akXRZ'
     ]
